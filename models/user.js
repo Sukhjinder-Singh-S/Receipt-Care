@@ -7,7 +7,7 @@ const userSchema = new Schema(
     email: { type: String },
     password: { type: String },
     premium: { type: Boolean },
-    picture: { type: Object },
+    picture: { type: String },
     activeStatus: { type: Boolean },
     deviceType: { type: String, enum: ["android", "ios"] },
     otp: { type: Number },
