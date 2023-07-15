@@ -8,11 +8,11 @@ const userSchema = new Schema(
     password: { type: String },
     premium: { type: Boolean },
     picture: { type: String },
-    activeStatus: { type: Boolean },
+    activeStatus: { type: Boolean ,default:true},
+    loginDate:{type:Date},
     deviceType: { type: String, enum: ["android", "ios"] },
     otp: { type: Number },
-  },
-  { timestamps: true }
+  }
 );
 
 module.exports = mongoose.model("User", userSchema);

@@ -2,7 +2,7 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 
 module.exports = async (req, res, next) => {
-//   console.log(req.headers.authorization + ` In Authentication router`);
+  //   console.log(req.headers.authorization + ` In Authentication router`);
   try {
     if (!req.headers.authorization) {
       return console.log("No header found"); //error handling
@@ -12,7 +12,10 @@ module.exports = async (req, res, next) => {
       process.env.SECRET_KEY
     );
     console.log(verifyToken);
-    (req.userId = verifyToken.userId), (req.premium = verifyToken.premium);
+    req.userId = verifyToken.userId;
+    req.premium = verifyToken.premium;
+    req.name = verifyToken.name;
+    req.email = verifyToken.email;
     next();
   } catch (err) {
     res

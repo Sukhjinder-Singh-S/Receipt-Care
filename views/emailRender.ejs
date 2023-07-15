@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+      integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N"
+      crossorigin="anonymous"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    />
+    <title>Reset Password</title>
+    <style>
+      /*login page css start*/
+
+      .banner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #001c30;
+      }
+
+      .main-banner-right {
+        width: 35%;
+        max-width: 600px;
+        text-align: left;
+        background-color: #fff;
+        padding: 20px;
+      }
+
+      .main-banner-right h1 {
+        font-weight: 600;
+        font-size: 36px;
+        line-height: 54px;
+        color: #000;
+      }
+
+      .main-banner-right h1 strong {
+        color: #001c30;
+        font-weight: 600;
+      }
+
+      .main-banner-right h1 strong span {
+        color: #ff9c1c;
+        font-weight: 600;
+      }
+
+      .main-banner-right p {
+        font-weight: 400;
+        font-size: 18px;
+        line-height: 27px;
+        color: #737373;
+      }
+
+      .main-banner-right .pwd {
+        border: 2px solid #eaf0f7;
+        width: 100%;
+        height: 50px;
+      }
+
+      .main-banner-right .btn.btn-primary {
+        width: 100%;
+        background: #001c30;
+        box-shadow: 0px 4px 21px rgba(12, 138, 123, 0.2);
+        border-radius: 10px;
+        margin-top: 30px;
+        font-weight: 600;
+        font-size: 18px;
+        line-height: 21px;
+        height: 55px;
+      }
+
+      .main-banner-right .btn-primary:hover {
+        color: #fff;
+        background-color: #001c30;
+        border-color: #133d5b;
+      }
+
+      .password-container {
+        position: relative;
+      }
+
+      .toggle-password {
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        cursor: pointer;
+      }
+      .alert {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 30%;
+        background-color: red;
+        color: rgb(0, 0, 0);
+        text-align: center;
+        padding: 15px;
+        margin: 10px;
+        font-weight: bold;
+      }
+      /*login page css close*/
+    </style>
+  </head>
+
+  <body>
+    <section class="banner">
+      <div class="main-banner-right">
+        <h1>Reset Password</h1>
+        <form action="" method="post" onsubmit="return validateForm()">
+          <label for="newPassword">New Password:</label><br />
+          <div class="password-container">
+            <input
+              type="password"
+              name="newPassword"
+              class="pwd"
+              id="newPassword"
+            />
+            <span
+              class="toggle-password"
+              onclick="togglePasswordVisibility('newPassword')"
+            >
+              <i class="far fa-eye"></i>
+            </span>
+          </div>
+          <br />
+          <label for="confirmPassword">Confirm Password:</label><br />
+          <div class="password-container">
+            <input
+              type="password"
+              name="confirmPassword"
+              class="pwd"
+              id="confirmPassword"
+            />
+            <span
+              class="toggle-password"
+              onclick="togglePasswordVisibility('confirmPassword')"
+            >
+              <i class="far fa-eye"></i>
+            </span>
+          </div>
+          <br />
+          <input type="submit" value="Reset Password" class="btn btn-primary" />
+        </form>
+      </div>
+    </section>
+    <script
+      src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
+      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      function togglePasswordVisibility(passwordFieldId) {
+        var passwordField = document.getElementById(passwordFieldId);
+        var icon = passwordField.parentNode.querySelector(".toggle-password i");
+
+        if (passwordField.type === "password") {
+          passwordField.type = "text";
+          icon.classList.remove("far", "fa-eye");
+          icon.classList.add("far", "fa-eye-slash");
+        } else {
+          passwordField.type = "password";
+          icon.classList.remove("far", "fa-eye-slash");
+          icon.classList.add("far", "fa-eye");
+        }
+      }
+
+      function togglePasswordVisibility(passwordId) {
+        const passwordInput = document.getElementById(passwordId);
+        const passwordType = passwordInput.getAttribute("type");
+        const togglePasswordIcon =
+          passwordInput.nextElementSibling.firstElementChild;
+
+        if (passwordType === "password") {
+          passwordInput.setAttribute("type", "text");
+          togglePasswordIcon.classList.remove("fa-eye");
+          togglePasswordIcon.classList.add("fa-eye-slash");
+        } else {
+          passwordInput.setAttribute("type", "password");
+          togglePasswordIcon.classList.remove("fa-eye-slash");
+          togglePasswordIcon.classList.add("fa-eye");
+        }
+      }
+
+      function validateForm() {
+        const newPassword = document.getElementById("newPassword").value;
+        const confirmPassword =
+          document.getElementById("confirmPassword").value;
+
+        if (newPassword !== confirmPassword) {
+          showAlert("Password does not match");
+          return false;
+        }
+
+        return true;
+      }
+
+      function showAlert(message) {
+        const alertBox = document.createElement("div");
+        alertBox.classList.add("alert");
+        alertBox.textContent = message;
+        document.body.appendChild(alertBox);
+
+        setTimeout(function () {
+          alertBox.style.display = "none";
+        }, 1500);
+      }
+    </script>
+  </body>
+</html>
