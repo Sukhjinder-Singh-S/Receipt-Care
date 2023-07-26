@@ -1,7 +1,10 @@
+"use strict";
+
 const Receipt = require("../models/receipt");
 const Folder = require("../models/folder");
 const { default: mongoose } = require("mongoose");
 const { validationResult } = require("express-validator");
+const { StatusCodes } = require("http-status-codes");
 
 //POST RECEIPT PENDING BARCODE READING
 exports.postReceipt = async (req, res) => {
@@ -9,7 +12,7 @@ exports.postReceipt = async (req, res) => {
     const error = validationResult(req);
     if (!error.isEmpty()) {
       console.log(error.array());
-      return res.status(422).json(error.array());
+      return res.status(StatusCodes.UNPROCESSABLE_ENTITY).json(error.array());
     }
     const findFolder = await Folder.findOne({ folderName: req.body.folder });
     const receipt = new Receipt({
@@ -31,17 +34,17 @@ exports.postReceipt = async (req, res) => {
       url: req.body.url,
       notes: req.body.notes,
       userId: req.userId,
-      picture: req.body.picture,
+      picture: req.file,
       barcode: req.body.barcode,
-      randomNum: `#  ${Math.floor(Math.random() * (999 - 100 + 1) + 100)}`,
+      randomNum: `#${Math.floor(Math.random() * (999 - 100 + 1) + 100)}`,
     });
     const saveIntoDb = await receipt.save();
-    res.status(201).json({
+    res.status(StatusCodes.OK).json({
       message: `Receipt saved into Db successfully`,
       data: saveIntoDb,
     });
   } catch (err) {
-    res.status(500).json({ message: `Some internal error occur` });
+    next(err);
   }
 };
 
@@ -52,9 +55,9 @@ exports.updateReceipt = async (req, res, next) => {
     console.log(id);
     const findReceipt = await Receipt.findById(id);
     if (!findReceipt) {
-      const err = new Error("No Receipt found");
-      err.statusCode = 404;
-      throw err;
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: `No Receipt found` });
     }
     const payload = {
       valid: req.body.valid,
@@ -62,17 +65,14 @@ exports.updateReceipt = async (req, res, next) => {
     };
     const updateRec = await Receipt.findByIdAndUpdate(id, payload);
     if (!updateRec) {
-      const err = new Error("Receipt is not updated");
-      err.statusCode = 304;
-      throw err;
+      return res
+        .status(StatusCodes.NOT_MODIFIED)
+        .json({ message: `Receipt is not updated` });
     }
     res
-      .status(201)
+      .status(StatusCodes.OK)
       .json({ message: `Receipt updated successfully for user ${id}` });
   } catch (err) {
-    if (!err.statusCode) {
-      err.statusCode = 500;
-    }
     next(err);
   }
 };
@@ -84,15 +84,12 @@ exports.getSingleReceipts = async (req, res, next) => {
     const id = req.params._id;
     const findRec = await Receipt.findById(id);
     if (!findRec) {
-      const err = new Error("No Record found");
-      err.statusCode = 404;
-      throw err;
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: `No Record found` });
     }
     res.status(201).json({ Receipt: findRec });
   } catch (err) {
-    if (!err.statusCode) {
-      err.statusCode = 500;
-    }
     next(err);
   }
 };
@@ -101,22 +98,20 @@ exports.getSingleReceipts = async (req, res, next) => {
 exports.getBulkRec = async (req, res, next) => {
   try {
     const parm = req.params.valid;
+    const recType = parm == 0 ? true : false;
     const id = new mongoose.Types.ObjectId(req.userId);
-    console.log(parm);
+    // console.log(recType);
     const findRec = await Receipt.aggregate([
-      { $match: { $and: [{ userId: id }, { valid: parm }] } },
+      { $match: { $and: [{ userId: id }, { valid: recType }] } },
     ]);
     if (!findRec) {
-      const err = new Error("No record found");
-      err.statusCode = 404;
-      throw err;
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: `No record found` });
     }
     console.log(findRec);
-    res.status(201).json(findRec);
+    res.status(StatusCodes.OK).json({ data: findRec });
   } catch (err) {
-    if (!err.statusCode) {
-      err.statusCode = 500;
-    }
     next(err);
   }
 };
@@ -132,11 +127,8 @@ exports.getFolderRec = async (req, res, next) => {
         $match: { $and: [{ folder: folderId }, { userId: user }] },
       },
     ]);
-    res.status(201).json({ data: findRecs });
+    res.status(StatusCodes.OK).json({ data: findRecs });
   } catch (err) {
-    if (!err.statusCode) {
-      err.statusCode = 500;
-    }
     next(err);
   }
 };
@@ -155,11 +147,31 @@ exports.favRec = async (req, res, next) => {
           .status(401)
           .json({ message: `Something went wrong,Please try again` });
     res
-      .status(201)
+      .status(StatusCodes.OK)
       .json({ message: `Receipt set to ${fav == 0 ? true : false}` });
   } catch (err) {
-    if (!err.statusCode) {
-      err.statusCode = 500;
+    next(err);
+  }
+};
+
+//GET FAVOURITE RECEIPTS FOR PARTICULAR USER
+exports.getFav = async (req, res, next) => {
+  try {
+    const user_id = new mongoose.Types.ObjectId(req.userId);
+    const findFav = await Receipt.aggregate([
+      {
+        $match: {
+          $and: [{ userId: user_id }, { favourite: true }],
+        },
+      },
+    ]);
+    if (!findFav) {
+      return res
+        .status(StatusCodes.NO_CONTENT)
+        .json({ message: `Add some receipts to favourite to see them here` });
     }
+    res.status(StatusCodes.OK).json({ Receipts: findFav });
+  } catch (err) {
+    next(err);
   }
 };

@@ -1,10 +1,15 @@
+"use strict";
+
 const { body } = require("express-validator");
 
 exports.VALIDATOR = {
   USER_SIGNUP: [
     body("name").exists().isString().isLength({ min: 4 }),
     body("email", "Invalid email type").isEmail(),
-    body("password", "Password must be 8 digit long,include num,alphabet and symbol")
+    body(
+      "password",
+      "Password must be 8 digit long,include num,alphabet and symbol"
+    )
       .exists()
       .isStrongPassword({
         minLength: 8,
@@ -21,12 +26,25 @@ exports.VALIDATOR = {
   ],
 
   USER_UPDATE: [
-    body("name").exists().isString().isLength({ min: 4 }),
-    body("email", "Invalid email type").isEmail(),
+    body("name").custom((value) => {
+      if (value && value.length < 4) {
+        throw new Error("Name length must be 4 or greater");
+      }
+      return true;
+    }),
+    body("email").custom((value) => {
+      if (value && !/\S+@\S+\.\S+/.test(value)) {
+        throw new Error("Invalid email formet");
+      }
+      return true;
+    }),
   ],
   USER_FORGOTPASS: [body("email", "Invalid email type").isEmail()],
   USER_RESETPASS: [
-    body("newPassword", "Password must be 8 digit long,which include num,alphabet and symbol")
+    body(
+      "newPassword",
+      "Password must be 8 digit long,which include num,alphabet and symbol"
+    )
       .exists()
       .isStrongPassword({
         minLength: 8,
@@ -34,7 +52,7 @@ exports.VALIDATOR = {
         minUppercase: 1,
         minNumbers: 1,
         minSymbols: 1,
-      })
+      }),
   ],
   RECEIPT_POST: [
     body("merchant", "Merchant name is missing").exists(),

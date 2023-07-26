@@ -21,8 +21,8 @@ const receiptSchema = new Schema(
     url: { type: String },
     notes: { type: String },
     userId: { type: Schema.Types.ObjectId, ref: "users" },
-    picture: { type: String },
-    valid: { type: String, default: "1" },
+    picture: { type: Object },
+    valid: { type: Boolean, default: false },
     barcode: { type: String },
     favourite: { type: Boolean, default: false },
     randomNum:{type:String}

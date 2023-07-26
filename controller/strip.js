@@ -1,40 +1,128 @@
-const Stripe = require("stripe");
-const stripe = Stripe(
-  "sk_test_51NM25ySDHZWobBACa5DiJWIkw7d2BQvAIWJG8pV4YYktQUyuPbBjhaMxz9EE7z3YSoB8xZS5Ob5ErH0HPiyzhnpv00rupdJsjO"
-);
+"use strict";
 
-exports.createCustomer = async (req, res, next) => {
+const User = require("../models/user");
+const { StatusCodes } = require("http-status-codes");
+const stripeFunctions = require("../helper/stripe");
+const { SENDMAIL } = require("../helper/sendMail");
+const Stripe = require("stripe");
+const stripe = Stripe(process.env.STIPE_API_KEY);
+
+exports.stipePayment = async (req, res, next) => {
   try {
-    console.log(">>>>>>>>>>> In stripe payment Api >>>>>>>>>>");
-    console.log(req.email, req.name, req.userId);
-    const customer = await stripe.customers.create({
-      name: req.name,
-      email: req.email,
-      description: `A new Stripe customer with id ${req.userId}`,
-      metadata: {
-        userIdDb: req.userId,
-      },
-      payment_method: req.body.payment_method,
-    });
-    if (!customer) {
-      const err = new Error("Some internale error occur");
-      err.statusCode = 401;
-      throw err;
-    }
+    const customer = await stripeFunctions.createCustomer(req);
     console.log(customer);
-    const subscription = await stripe.subscriptions.create({
-      customer: customer.id,
-      items: [{ price: "Generata a price id form the product" }],
-      billing: "charge_automatically",
-      billing_cycle_anchor: "now",
-      proration_behavior: "none",
-      billing_cycle: "month",
+
+    req.customerId = customer.id;
+
+    const subscription = await stripeFunctions.createSubscription(req);
+    console.log(subscription);
+
+    req.invoiceUrl = subscription.latest_invoice.hosted_invoice_url;
+
+    let mailType;
+    await SENDMAIL(null, (mailType = 3), req);
+
+    res.status(StatusCodes.CREATED).json({
+      message: `subscription has been created confirm it on frontend site`,
+      subscriptionId: subscription.id,
+      clientSecret: subscription.latest_invoice.payment_intent.client_secret,
+      Url: subscription.latest_invoice.hosted_invoice_url,
     });
-    res.status(201).json(customer);
   } catch (err) {
-    if (!err.statusCode) {
-      err.statusCode = 500;
-    }
-    next(err);
+    console.log(err);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: `` });
   }
+};
+
+exports.invoice_preview = async (req, res) => {
+  try {
+    console.log(req.params.subscriptionId);
+    const subsRetrieve = await stripeFunctions.retriveSubscription(req);
+    console.log(subsRetrieve);
+
+    const invRetrieve = await stripeFunctions.invoiceUpcoming(
+      req,
+      subsRetrieve
+    );
+    res.status(StatusCodes.OK).json(invRetrieve);
+  } catch (err) {
+    console.log(err);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: err.message });
+  }
+};
+
+exports.cancelSubscription = async (req, res) => {
+  try {
+    const cancel = await stripeFunctions.cancelSubscription(req);
+    res
+      .status(StatusCodes.OK)
+      .json({ message: `Response for subscription cancel` });
+  } catch (err) {
+    console.log(err);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: err.message });
+  }
+};
+
+exports.webhook = async (req, res) => {
+  const sig = req.headers[`stripe-signature`];
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.ENDPOINT_SECRET
+    );
+  } catch (err) {
+    console.log(err);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: err.message });
+  }
+
+  const dataObject = event.data.object;
+
+  switch (event.type) {
+    case `invoice.payment_succeeded`:
+      if (dataObject["billing_reason"] == "subscription_create") {
+        console.log(
+          `>>>>>>>>>>>>>> succeeded ${event.type} <<<<<<<<<<<<`,
+          dataObject[`subscription`]
+        );
+      }
+      break;
+
+    case `customer.subscription.deleted`:
+      console.log(`>>>>>>>>>> subscription has been deleted <<<<<<<<<<<`);
+      break;
+
+    case `invoice.payment_failed`:
+      console.log(`>>>>>>>>>>>>>>> Payment failed ${event.type} <<<<<<<<<<<<<`);
+      break;
+
+    case `invoice.finalized`:
+      console.log(
+        `>>>>>>>>>>>>>>>invoice finalised ${event.type} for ${dataObject["invoice"]} <<<<<<<<<<<<<`
+      );
+      break;
+
+    case "customer.subscription.deleted":
+      if (event.request != null) {
+        // handle a subscription cancelled by your request
+        // from above.
+      } else {
+        // handle subscription cancelled automatically based
+        // upon your subscription settings.
+      }
+      break;
+
+    default:
+      console.log(
+        `>>>>>>>>>>>>>>>>>> unhandled event ${event.type} <<<<<<<<<<<<<<<<<`
+      );
+  }
+  res.status(StatusCodes.OK).json({ received: true });
 };

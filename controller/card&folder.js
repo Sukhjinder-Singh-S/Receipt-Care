@@ -1,22 +1,22 @@
+"use strict";
+
 const { default: mongoose, Error } = require("mongoose");
 const Card = require("../models/card");
 const Folder = require("../models/folder");
+const { StatusCodes } = require("http-status-codes");
 
 //GET ALL CARD FROM THE DB
 exports.getCards = async (req, res, next) => {
   try {
     if (!req.userId) {
-      const err = new Error("No user id found");
-      err.statusCode = 404;
-      throw err;
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: `No user id found` });
     }
     const defaultCards = await Card.find({ type: "default" });
     const userCards = await Card.find({ userId: req.userId });
-    res.status(201).json([...defaultCards, ...userCards]);
+    res.status(StatusCodes.OK).json([...defaultCards, ...userCards]);
   } catch (err) {
-    if (!err.statusCode) {
-      err.statusCode = 500;
-    }
     next(err);
   }
 };
@@ -34,17 +34,15 @@ exports.postCard = async (req, res, next) => {
     });
     const postCard = await card.save();
     if (!postCard) {
-      const err = new Error("Card item not posted");
-      err.statusCode = 404;
-      throw err;
+      return (
+        res.status(StatusCodes.NOT_FOUND),
+        json({ message: `Card item not posted` })
+      );
     }
     res
-      .status(201)
+      .status(StatusCodes.OK)
       .json({ message: `card saved successfully`, data: postCard });
   } catch (err) {
-    if (!err.statusCode) {
-      err.statusCode = 500;
-    }
     next(err);
   }
 };
@@ -54,7 +52,7 @@ exports.getFolders = async (req, res, next) => {
   try {
     if (!req.userId) {
       const err = new Error("No id found");
-      err.statusCode = 404;
+      err.statusCode = StatusCodes.NOT_FOUND;
       throw err;
     }
     const defaultfolder = await Folder.find({ type: "default" });
@@ -62,15 +60,12 @@ exports.getFolders = async (req, res, next) => {
       userId: new mongoose.Types.ObjectId(req.userId),
     });
     if (!defaultfolder || !userFolder) {
-      const err = new Error(`Not folder found`);
-      err.statusCode = 404;
-      throw err;
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: `Not folder found` });
     }
-    res.status(201).json([...defaultfolder, ...userFolder]);
+    res.status(StatusCodes.OK).json([...defaultfolder, ...userFolder]);
   } catch (err) {
-    if (!err.statusCode) {
-      err.statusCode = 500;
-    }
     next(err);
   }
 };
@@ -86,17 +81,14 @@ exports.postFolder = async (req, res, next) => {
     });
     const postFolder = await folder.save();
     if (!postFolder) {
-      const err = new Error("folder not posted");
-      err.statusCode = 404;
-      throw err;
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: `folder not posted` });
     }
     res
-      .status(201)
+      .status(StatusCodes.OK)
       .json({ message: `Folder saved successfully`, data: postFolder });
   } catch (err) {
-    if (!err.statusCode) {
-      err.statusCode = 500;
-    }
     next(err);
   }
 };

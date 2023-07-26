@@ -1,3 +1,5 @@
+"use strict";
+
 require("dotenv").config();
 const Folder = require("../models/folder");
 const Card = require("../models/card");

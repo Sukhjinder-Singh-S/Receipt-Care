@@ -1,11 +1,16 @@
+"use strict";
+
 require("dotenv").config();
+const { StatusCodes } = require("http-status-codes");
 const jwt = require("jsonwebtoken");
 
 module.exports = async (req, res, next) => {
   //   console.log(req.headers.authorization + ` In Authentication router`);
   try {
     if (!req.headers.authorization) {
-      return console.log("No header found"); //error handling
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: `No header found` }); //error handling
     }
     const verifyToken = jwt.verify(
       req.headers.authorization.split(" ")[1],
@@ -19,7 +24,7 @@ module.exports = async (req, res, next) => {
     next();
   } catch (err) {
     res
-      .status(500)
-      .json({ message: `Some internal error occur,Please try again` });
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: err.message });
   }
 };
